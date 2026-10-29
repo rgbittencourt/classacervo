@@ -2,7 +2,7 @@
 // (os que o ClassAtelier envia em "Curso e GitHub…"). Página estática: fala direto com a API do
 // GitHub a partir do navegador; o token fica só na sessão (ou neste navegador, se você pedir).
 const APP_NAME = "ClassAcervo";
-const APP_VERSION = "1.1.0"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
+const APP_VERSION = "1.2.0"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
 const API = "https://api.github.com";
 const MARKER = "gerado-pelo-classacervo";
 
@@ -197,7 +197,7 @@ function validateDest(to, from) {
   let dest = String(to || "").trim().replace(/^\/+|\/+$/g, "").replace(/\/{2,}/g, "/");
   if (!dest) return { error: "Informe o novo caminho." };
   if (/[\\:*?"<>|]/.test(dest) || dest.split("/").some((s) => s === ".." || s === "." || s === ".git" || !s.trim())) return { error: "O caminho tem caracteres ou partes não permitidos." };
-  if (/\s/.test(dest)) return { error: "Evite espaços: use hífens (ex.: tedpro/tge-2026). Assim o link do Moodle fica limpo." };
+  if (/\s/.test(dest)) return { error: "Evite espaços: use hífens (ex.: pasta/curso-2026). Assim o link do Moodle fica limpo." };
   if (dest === from) return { error: "O novo caminho é igual ao atual." };
   if (from && (dest + "/").startsWith(from + "/")) return { error: "Não dá para mover uma pasta para dentro dela mesma." };
   if (S.files.has(dest) || S.dirs.has(dest)) return { error: "Já existe algo em «" + dest + "». Escolha outro caminho." };
@@ -275,6 +275,33 @@ async function copy(text, okMsg = "Copiado.") {
   toast(okMsg);
 }
 
+/* ───────────── instalar como aplicativo (PWA) ───────────── */
+let installEvent = null;
+const isStandalone = () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+window.addEventListener("beforeinstallprompt", (ev) => { ev.preventDefault(); installEvent = ev; renderTop(); });
+window.addEventListener("appinstalled", () => { installEvent = null; renderTop(); toast("ClassAcervo instalado."); });
+function installHelp() {
+  const ua = navigator.userAgent || "";
+  const ios = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const android = /Android/.test(ua);
+  const firefox = /Firefox/.test(ua) && !android;
+  const safariMac = !ios && /Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR/.test(ua);
+  const steps = ios ? ["Abra esta página no <b>Safari</b>.", "Toque no botão <b>Compartilhar</b> (o quadrado com a seta para cima).", "Escolha <b>Adicionar à Tela de Início</b> e confirme em <b>Adicionar</b>."]
+    : android ? ["No <b>Chrome</b> (ou Edge/Samsung Internet), abra o menu <b>⋮</b>.", "Toque em <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).", "Confirme em <b>Instalar</b>."]
+    : safariMac ? ["No menu do Safari, abra <b>Arquivo</b>.", "Escolha <b>Adicionar ao Dock…</b> e confirme."]
+    : firefox ? ["O Firefox no computador não instala aplicativos web.", "Abra esta página no <b>Chrome</b> ou no <b>Edge</b> e use o ícone de instalar na barra de endereço."]
+    : ["No <b>Chrome</b> ou <b>Edge</b>, clique no ícone <b>Instalar</b> no fim da barra de endereço (um monitor com uma seta).", "Se não aparecer, abra o menu <b>⋮</b> e escolha <b>Instalar ClassAcervo…</b> (no Edge: <b>Aplicativos → Instalar este site como um aplicativo</b>)."];
+  dialog({ title: "Instalar o ClassAcervo", body: `<p>O ClassAcervo vira um aplicativo com ícone próprio, que abre em janela sozinha. Funciona em computador, tablet e celular.</p><ol class="steps">${steps.map((t) => `<li>${t}</li>`).join("")}</ol><p class="hint">Instalar não muda nada no seu repositório. Para usar, continue precisando de internet e do token do GitHub.</p>`, actions: [{ label: "Fechar", kind: "primary", onClick: closeDialog }] });
+}
+async function actInstall() {
+  if (installEvent) {
+    const ev = installEvent; installEvent = null;
+    try { await ev.prompt(); await ev.userChoice; } catch (e) { /* recusou */ }
+    renderTop(); return;
+  }
+  installHelp();
+}
+
 function renderTop() {
   const mark = '<img src="./assets/classacervo-mark.svg" alt="" width="34" height="34">';
   let right = "";
@@ -285,7 +312,7 @@ function renderTop() {
     right = `<div class="conn-info"><code>${esc(S.conn.owner)}/${esc(S.conn.repo)}@${esc(S.conn.branch)}</code>${pages}${S.loadedAt ? `<span title="Hora da última leitura do repositório">lido às ${S.loadedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>` : ""}</div>
       <button class="btn small" data-act="reload">Recarregar</button><button class="btn small ghost" data-act="logout">Sair</button>`;
   }
-  $("#top").innerHTML = `<a class="brand" href="./" aria-label="${APP_NAME}">${mark}<span><span class="wordmark"><b>Class</b><i>Acervo</i></span><span class="tagline">cursos publicados no GitHub Pages · v${APP_VERSION}</span></span></a><span class="top-spacer"></span><a class="btn" href="https://rgbittencourt.github.io/classatelier/" target="_blank" rel="noopener" title="Abrir o ClassAtelier (editor das aulas) em outra aba">ClassAtelier ↗</a>${right}`;
+  $("#top").innerHTML = `<a class="brand" href="./" aria-label="${APP_NAME}">${mark}<span><span class="wordmark"><b>Class</b><i>Acervo</i></span><span class="tagline">cursos publicados no GitHub Pages · v${APP_VERSION}</span></span></a><span class="top-spacer"></span>${isStandalone() ? "" : `<button class="btn" data-act="install" title="Instalar o ClassAcervo como aplicativo neste aparelho">Instalar app</button>`}<a class="btn" href="https://rgbittencourt.github.io/classatelier/" target="_blank" rel="noopener" title="Abrir o ClassAtelier (editor das aulas) em outra aba">ClassAtelier ↗</a>${right}`;
 }
 
 function renderConnect() {
@@ -295,12 +322,12 @@ function renderConnect() {
     <form class="panel" id="connect-form" autocomplete="off">
       ${S.error ? `<p class="err" role="alert">${esc(S.error)}</p>` : ""}
       <div class="row3">
-        <label class="field"><span>Conta ou organização</span><input type="text" name="owner" value="${esc(S.owner)}" placeholder="rgbittencourt" required></label>
-        <label class="field"><span>Repositório</span><input type="text" name="repo" value="${esc(S.repo)}" placeholder="moodle-ifsc" required></label>
+        <label class="field"><span>Conta ou organização</span><input type="text" name="owner" value="${esc(S.owner)}" placeholder="sua-conta" required></label>
+        <label class="field"><span>Repositório</span><input type="text" name="repo" value="${esc(S.repo)}" placeholder="seu-repositorio" required></label>
         <label class="field"><span>Branch (opcional)</span><input type="text" name="branch" value="${esc(S.branch)}" placeholder="principal" title="Deixe em branco para usar a branch principal."></label>
       </div>
       <label class="field"><span>Token do GitHub</span><input type="password" name="token" value="${esc(S.token)}" placeholder="github_pat_…" required><small>Token fine-grained só deste repositório, com Contents e Pages em leitura e escrita.</small></label>
-      <label class="check"><input type="checkbox" name="remember" ${localStorage.getItem("acervo.token") ? "checked" : ""}><span>Lembrar o token neste navegador (marque só em computador seu). Sem marcar, ele vale só enquanto a aba estiver aberta.</span></label>
+      <label class="check"><input type="checkbox" name="remember" ${(localStorage.getItem("acervo.token") || localStorage.getItem("acervo.repo")) ? "checked" : ""}><span>Lembrar conta, repositório e token neste navegador (marque só em computador seu). Sem marcar, nada fica guardado: os dados valem só enquanto a aba estiver aberta.</span></label>
       <button class="btn primary" type="submit" ${S.loading ? "disabled" : ""}>${S.loading ? '<span class="spinner"></span>Conectando…' : "Conectar"}</button>
       <p class="hint">O token vai direto do seu navegador para o GitHub e não passa por nenhum outro servidor. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Criar token</a></p>
     </form></section>`;
@@ -529,7 +556,7 @@ async function actIndex(folder) {
     body: `<p>Cria <code>${esc(target)}</code>: uma página com a lista dos cursos${folder ? ` de <code>${esc(folder)}</code>` : ""}, agrupados por pasta e com link para cada um.</p>
       ${foreign ? `<p class="note">Já existe um <code>${esc(target)}</code> que não foi gerado por esta ferramenta. Ele será <b>substituído</b>.</p>` : ""}
       <label class="field"><span>Título da página</span><input type="text" id="idx-title" value="Cursos publicados"></label>
-      <label class="field"><span>Subtítulo (opcional)</span><input type="text" id="idx-sub" value="" placeholder="Ex.: TEDPRO · IFSC"></label>
+      <label class="field"><span>Subtítulo (opcional)</span><input type="text" id="idx-sub" value="" placeholder="Ex.: nome do programa · instituição"></label>
       <p style="margin-bottom:6px"><b>Cursos no índice</b></p>
       ${inside.length ? `<div class="list-pick">${inside.map((c, i) => `<label><input type="checkbox" data-i="${i}" checked><span>${esc(c.title)}<br><code>${esc(c.path)}</code></span></label>`).join("")}</div>` : '<p class="hint">Nenhum curso encontrado nesta pasta.</p>'}`,
     actions: [{ label: "Cancelar", onClick: closeDialog }, { label: "Gerar e publicar", kind: "primary", disabled: !inside.length, onClick: async () => {
@@ -573,8 +600,12 @@ async function connect(form) {
     S.conn = { owner: S.owner, repo: S.repo, branch: S.branch, canPush: false };
     const info = await api(`${repoPath()}`);
     S.conn = { owner: info.owner && info.owner.login || S.owner, repo: info.name || S.repo, branch: S.branch || info.default_branch || "main", canPush: !(info.permissions && info.permissions.push === false) }; // tokens de granularidade fina muitas vezes não informam "permissions": só bloqueia se vier false explícito; no mais, tenta e mostra o erro real do GitHub
-    try { localStorage.setItem("acervo.repo", JSON.stringify({ owner: S.owner, repo: S.repo, branch: S.branch })); } catch (e) { /* sem armazenamento */ }
-    try { sessionStorage.setItem("acervo.token", S.token); if (remember) localStorage.setItem("acervo.token", S.token); else localStorage.removeItem("acervo.token"); } catch (e) { /* sem armazenamento */ }
+    try {
+      const repoJson = JSON.stringify({ owner: S.owner, repo: S.repo, branch: S.branch });
+      sessionStorage.setItem("acervo.repo", repoJson); sessionStorage.setItem("acervo.token", S.token);
+      if (remember) { localStorage.setItem("acervo.repo", repoJson); localStorage.setItem("acervo.token", S.token); }
+      else { localStorage.removeItem("acervo.repo"); localStorage.removeItem("acervo.token"); }
+    } catch (e) { /* sem armazenamento */ }
     S.loading = true; $("#main").innerHTML = '<div class="loading"><span class="spinner"></span>Lendo o repositório…</div>'; renderTop();
     await loadRepo();
     S.loading = false; S.view = "cursos"; render();
@@ -602,6 +633,7 @@ document.addEventListener("click", async (ev) => {
   if (act === "tab") { S.view = el.dataset.view; renderMain(); return; }
   if (act === "reload") { $("#main").innerHTML = '<div class="loading"><span class="spinner"></span>Lendo o repositório…</div>'; try { await loadRepo(); render(); toast("Atualizado: " + S.courses.length + " curso(s), " + S.files.size + " arquivo(s)."); } catch (e) { render(); dlgError(e); } return; }
   if (act === "logout") { logout(); return; }
+  if (act === "install") { actInstall(); return; }
   if (act === "enable-pages") { actEnablePages(); return; }
   if (act === "toggle") { if (S.open.has(path)) S.open.delete(path); else S.open.add(path); renderMain(); return; }
   if (act === "check") { if (el.checked) S.checked.add(path); else S.checked.delete(path); renderMain(); return; }
@@ -626,9 +658,13 @@ document.addEventListener("click", async (ev) => {
 /* ───────────── início ───────────── */
 (function init() {
   try {
-    const saved = JSON.parse(localStorage.getItem("acervo.repo") || "null");
+    const saved = JSON.parse(sessionStorage.getItem("acervo.repo") || localStorage.getItem("acervo.repo") || "null");
     if (saved) { S.owner = saved.owner || ""; S.repo = saved.repo || ""; S.branch = saved.branch || ""; }
     S.token = sessionStorage.getItem("acervo.token") || localStorage.getItem("acervo.token") || "";
   } catch (e) { /* sem armazenamento */ }
   render();
+  // Service worker: exigido por alguns navegadores para oferecer a instalação; só guarda a "casca" do app.
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("./sw.js").catch(() => { /* sem service worker: continua funcionando */ }); });
+  }
 })();

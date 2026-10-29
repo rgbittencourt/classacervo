@@ -2,6 +2,16 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.2.0 · 29/10/2026 · instalável e sem dados do autor na tela
+
+**Acrescentado**
+- **Instalar app**: o ClassAcervo pode ser instalado como aplicativo no computador (Chrome e Edge), no tablet e no celular (Android: Chrome/Edge/Samsung Internet; iPhone e iPad: Safari, em «Adicionar à Tela de Início»; Mac: Safari, «Adicionar ao Dock»). O botão **Instalar app** do cabeçalho abre o instalador do navegador quando ele oferece, ou mostra o passo a passo do aparelho; some quando o app já está instalado.
+- Manifesto completo (ícones 192 e 512, comuns e *maskable*, categorias, idioma) e *service worker* (`sw.js`) que guarda só a «casca» do app: abre mesmo sem conexão, mas para trabalhar continua precisando de internet e do token. As chamadas ao GitHub nunca passam por ele nem ficam guardadas.
+
+**Mudou**
+- Os campos de conexão começam **vazios** e os exemplos dentro deles são neutros («sua-conta», «seu-repositorio»); nenhuma conta, repositório ou pasta do autor aparece como valor ou como exemplo (o mesmo vale para os exemplos nas mensagens e no índice gerado). Ficam apenas os créditos de autoria do rodapé.
+- **Lembrar** agora guarda conta, repositório **e** token, só se a pessoa marcar a caixa. Sem marcar, nada é gravado no navegador: os dados valem só enquanto a aba estiver aberta (antes, conta e repositório eram sempre lembrados).
+
 ## 1.1.0 · 29/10/2026 · endereço próprio
 
 O ClassAcervo ganhou repositório e endereço próprios: **https://rgbittencourt.github.io/classacervo/** (antes: `…/classatelier/acervo/`).
