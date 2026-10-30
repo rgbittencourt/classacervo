@@ -130,13 +130,13 @@ async function detectCourses() {
   }));
 }
 const slugify = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-// Os arquivos em projetos/ se chamam SemanaNN-título-ClassAtelier.json: dali sai o número da semana de cada aula.
+// Os arquivos em projetos/ se chamam SemanaNN-título-ClassAtelier.json (ou AulaNN-…, em curso organizado por aulas): dali sai o número de cada aula.
 // (A semana NÃO é o número do aula-NN.html: aula-01 pode ser a Semana 3 se o curso começa nela.)
 function weeksFromProjects(dir) {
   const out = [];
   for (const p of S.files.keys()) {
     if (dirname(p) !== dir + "/projetos") continue;
-    const m = /^Semana(\d+)-(.+)-ClassAtelier\.json$/i.exec(basename(p));
+    const m = /^(?:Semana|Aula)(\d+)-(.+)-ClassAtelier\.json$/i.exec(basename(p));
     if (m) out.push({ week: Number(m[1]), slug: slugify(m[2]) });
   }
   return out;
