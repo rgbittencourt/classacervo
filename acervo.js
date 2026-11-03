@@ -2,7 +2,7 @@
 // (os que o ClassAtelier envia em "Curso e GitHub…"). Página estática: fala direto com a API do
 // GitHub a partir do navegador; o token fica só na sessão (ou neste navegador, se você pedir).
 const APP_NAME = "ClassAcervo";
-const APP_VERSION = "1.2.1"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
+const APP_VERSION = "1.3.0"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
 const API = "https://api.github.com";
 const MARKER = "gerado-pelo-classacervo";
 
@@ -18,6 +18,11 @@ const S = {
   view: "cursos", selected: "", open: new Set(), openLessons: new Set(),
   checked: new Set(),    // itens marcados na árvore (exclusão em lote)
   loadedAt: null,
+  lastChange: new Map(), // pasta -> { date, message, sha } (último commit que mexeu nela)
+  build: undefined,      // último build do GitHub Pages: { status, commit, updated, error } | null
+  online: new Map(),     // endereço -> { ok, status, lastModified, at } (resultado do "Testar links")
+  testing: new Set(),    // cursos com teste em andamento
+  thumbs: true,          // miniaturas dos cursos ligadas
   loading: false, error: ""
 };
 
@@ -74,6 +79,8 @@ async function loadRepo() {
   try { S.pages = await api(`${base}/pages`); } catch (e) { S.pages = e.status === 404 ? null : S.pages === undefined ? null : S.pages; }
   await detectCourses();
   S.loadedAt = new Date();
+  S.online = new Map(); S.lastChange = new Map(); S.build = undefined;
+  loadPublishInfo(); // em segundo plano: datas das alterações e situação do GitHub Pages
   if (!S.treeInit) { S.treeInit = true; for (const d of S.dirs) if (!d.includes("/")) S.open.add(d); } // 1ª leitura: abre as pastas de cima, a árvore não parece vazia
   for (const p of [...S.checked]) if (!S.files.has(p) && !S.dirs.has(p)) S.checked.delete(p);
 }
@@ -168,6 +175,88 @@ async function courseInfo(dir) {
   } catch (e) { /* mantém o nome da pasta */ }
   S.titles.set(f.sha, info);
   return info;
+}
+
+/* ───────────── o que está publicado: datas, build do Pages e teste dos links ───────────── */
+const fmtDate = (d) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) + " às " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+function ago(d, now = Date.now()) {
+  const s = Math.max(0, Math.round((now - d.getTime()) / 1000));
+  if (s < 90) return "agora há pouco";
+  const m = Math.round(s / 60); if (m < 60) return `há ${m} min`;
+  const h = Math.round(m / 60); if (h < 24) return `há ${h} h`;
+  const days = Math.round(h / 24); if (days < 31) return days === 1 ? "ontem" : `há ${days} dias`;
+  const mo = Math.round(days / 30); if (mo < 12) return mo === 1 ? "há 1 mês" : `há ${mo} meses`;
+  const y = Math.round(days / 365); return y === 1 ? "há 1 ano" : `há ${y} anos`;
+}
+async function loadPublishInfo() {
+  const stamp = S.head && S.head.commit; const base = repoPath();
+  const jobs = S.courses.map(async (c) => {
+    try {
+      const list = await api(`${base}/commits?sha=${encodeURIComponent(S.conn.branch)}&path=${encodeURIComponent(c.path)}&per_page=1`);
+      const k = list && list[0];
+      if (k) S.lastChange.set(c.path, { date: new Date((k.commit.committer && k.commit.committer.date) || (k.commit.author && k.commit.author.date)), message: String(k.commit.message || "").split("\n")[0], sha: k.sha });
+    } catch (e) { /* sem a data: o cartão só não mostra o chip */ }
+  });
+  jobs.push((async () => {
+    if (!S.pages) { S.build = null; return; }
+    try {
+      const b = await api(`${base}/pages/builds/latest`);
+      S.build = { status: b.status, commit: b.commit || "", updated: b.updated_at ? new Date(b.updated_at) : null, error: b.error && b.error.message || "" };
+    } catch (e) { S.build = null; }
+  })());
+  await Promise.all(jobs);
+  if (S.head && S.head.commit === stamp && S.conn && S.view === "cursos") renderMain();
+}
+// Situação do site publicado em relação ao que está no repositório.
+function buildChip() {
+  const b = S.build;
+  if (S.pages === null) return "";
+  if (b === undefined) return '<span class="chip"><span class="spinner small"></span>Conferindo o GitHub Pages…</span>';
+  if (!b) return "";
+  const when = b.updated ? ` ${ago(b.updated)}` : "";
+  if (b.status === "errored") return `<span class="chip bad" title="${esc(b.error || "O GitHub Pages não conseguiu publicar.")}">Última publicação falhou${esc(when)}</span>`;
+  if (b.status !== "built") return `<span class="chip warn" title="O GitHub Pages ainda está montando o site. Costuma levar de 1 a 2 minutos.">Publicando…</span>`;
+  if (b.commit && S.head && b.commit !== S.head.commit) return `<span class="chip warn" title="O repositório tem alterações mais novas do que o site. O GitHub Pages ainda vai publicá-las (1 a 2 minutos).">Site um pouco atrás do repositório</span>`;
+  return `<span class="chip ok" title="O site está com a última versão do repositório.${b.updated ? " Publicado em " + esc(fmtDate(b.updated)) + "." : ""}">Site em dia${esc(when)}</span>`;
+}
+async function probe(url) {
+  const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const res = await fetch(url, { method: "HEAD", cache: "no-store", signal: ctl.signal });
+    const lm = res.headers.get("last-modified");
+    return { ok: res.ok, status: res.status, lastModified: lm ? new Date(lm) : null, at: new Date() };
+  } catch (e) { return { ok: false, status: 0, at: new Date() }; }
+  finally { clearTimeout(timer); }
+}
+const courseUrls = (c) => [{ key: "index", url: siteUrl(c.path, true), label: "Página do curso" }, ...c.lessons.map((l) => ({ key: l.file, url: siteUrl(l.file), label: lessonLabel(l) }))];
+async function testCourse(path) {
+  const c = S.courses.find((x) => x.path === path); if (!c || S.testing.has(path)) return;
+  S.testing.add(path); S.openLessons.add(path); renderMain();
+  const urls = courseUrls(c);
+  const out = await Promise.all(urls.map((u) => probe(u.url)));
+  urls.forEach((u, i) => S.online.set(u.url, out[i]));
+  S.testing.delete(path); renderMain();
+  const bad = out.filter((r) => !r.ok).length;
+  toast(bad ? `${bad} de ${out.length} link(s) não abriram. Veja a lista do curso.` : `Os ${out.length} links do curso estão no ar.`);
+}
+async function testAll() { for (const c of S.courses) await testCourse(c.path); }
+function statusChip(url) {
+  const r = S.online.get(url);
+  if (!r) return "";
+  if (r.ok) return `<span class="chip ok" title="Respondeu ${r.status} em ${esc(fmtDate(r.at))}${r.lastModified ? ". Versão no ar de " + esc(fmtDate(r.lastModified)) : ""}">No ar</span>`;
+  if (r.status === 404) return `<span class="chip bad" title="O endereço respondeu 404 (não encontrado). Se você acabou de publicar, espere 1 a 2 minutos e teste de novo.">Não encontrada</span>`;
+  if (r.status === 0) return `<span class="chip warn" title="Sem resposta: pode ser falta de conexão, o site privado ou um bloqueio do navegador.">Sem resposta</span>`;
+  return `<span class="chip bad" title="O endereço respondeu com erro ${r.status}.">Erro ${r.status}</span>`;
+}
+function courseOnline(c) {
+  const rs = courseUrls(c).map((u) => S.online.get(u.url));
+  if (S.testing.has(c.path)) return '<span class="chip"><span class="spinner small"></span>Testando os links…</span>';
+  if (rs.every((r) => !r)) return "";
+  const ok = rs.filter((r) => r && r.ok).length;
+  return ok === rs.length ? `<span class="chip ok">${ok} de ${rs.length} links no ar</span>` : `<span class="chip bad">${ok} de ${rs.length} links no ar</span>`;
+}
+function fitThumbs() {
+  document.querySelectorAll(".thumb iframe").forEach((f) => { const w = f.parentElement.clientWidth; if (w) f.style.transform = `scale(${w / 1280})`; });
 }
 
 /* ───────────── links do site ───────────── */
@@ -337,14 +426,18 @@ function courseCard(c) {
   const parent = dirname(c.path);
   const crumbs = (parent ? parent.split("/").map(esc).join(" / ") + " / " : "") + `<b>${esc(basename(c.path))}</b>`;
   const open = S.openLessons.has(c.path);
-  const lessons = open ? `<div class="lessons"><ol>${c.lessons.map((l) => `<li><span class="t"><span class="n">${l.week ? "Semana " + l.week : "Aula " + pad2(l.n)}</span>${esc(l.title || "(sem título)")}</span><button class="btn small" data-act="copy-link" data-path="${esc(l.file)}">Copiar link</button><a class="btn small ghost" href="${esc(siteUrl(l.file))}" target="_blank" rel="noopener" aria-label="Abrir ${esc(lessonLabel(l))}">↗</a></li>`).join("")}</ol>
+  const lessons = open ? `<div class="lessons"><ol>${S.online.has(siteUrl(c.path, true)) ? `<li><span class="t"><span class="n">Curso</span>Página inicial ${statusChip(siteUrl(c.path, true))}</span></li>` : ""}${c.lessons.map((l) => `<li><span class="t"><span class="n">${l.week ? "Semana " + l.week : "Aula " + pad2(l.n)}</span>${esc(l.title || "(sem título)")} ${statusChip(siteUrl(l.file))}</span><button class="btn small" data-act="copy-link" data-path="${esc(l.file)}">Copiar link</button><a class="btn small ghost" href="${esc(siteUrl(l.file))}" target="_blank" rel="noopener" aria-label="Abrir ${esc(lessonLabel(l))}">↗</a></li>`).join("")}</ol>
     <p style="margin:10px 0 0"><button class="btn small" data-act="copy-all-links" data-path="${esc(c.path)}">Copiar todos os links (lista para o Moodle)</button></p></div>` : "";
-  return `<article class="course"><div class="crumbs">${crumbs}</div><h3>${esc(c.title)}</h3>
-    <div class="meta"><span class="chip">${c.lessons.length} aula${c.lessons.length === 1 ? "" : "s"}</span><span class="chip">${sizeOf(c.size)}</span><span class="chip">${c.files} arquivos</span>${c.broken.length ? `<span class="chip bad" title="O índice do curso aponta para arquivos que não existem mais">${c.broken.length} link${c.broken.length === 1 ? "" : "s"} quebrado${c.broken.length === 1 ? "" : "s"} no índice</span>` : ""}</div>
+  const lc = S.lastChange.get(c.path);
+  const changed = lc && !isNaN(lc.date) ? `<span class="chip" title="${esc(lc.message || "")}${lc.message ? " — " : ""}${esc(fmtDate(lc.date))}">Alterado ${esc(ago(lc.date))}</span>` : "";
+  const thumb = S.thumbs && S.pages ? `<a class="thumb" href="${esc(siteUrl(c.path, true))}" target="_blank" rel="noopener" aria-label="Abrir o site de ${esc(c.title)}"><iframe src="${esc(siteUrl(c.path, true))}" title="Miniatura de ${esc(c.title)}" sandbox="allow-scripts" loading="lazy" referrerpolicy="no-referrer" tabindex="-1" aria-hidden="true"></iframe></a>` : "";
+  return `<article class="course">${thumb}<div class="crumbs">${crumbs}</div><h3>${esc(c.title)}</h3>
+    <div class="meta">${changed}${courseOnline(c)}<span class="chip">${c.lessons.length} aula${c.lessons.length === 1 ? "" : "s"}</span><span class="chip">${sizeOf(c.size)}</span><span class="chip">${c.files} arquivos</span>${c.broken.length ? `<span class="chip bad" title="O índice do curso aponta para arquivos que não existem mais">${c.broken.length} link${c.broken.length === 1 ? "" : "s"} quebrado${c.broken.length === 1 ? "" : "s"} no índice</span>` : ""}</div>
     ${c.broken.length ? `<p class="note">O <code>index.html</code> do curso ainda aponta para nomes antigos de aula.${c.broken.some((b) => b.target) ? ` <button class="btn small" data-act="fix-index" data-path="${esc(c.path)}">Consertar links do índice</button>` : " Não achei os arquivos novos correspondentes; confira em «Arquivos»."}</p>` : ""}
     <div class="course-actions">
       <a class="btn small primary" href="${esc(siteUrl(c.path, true))}" target="_blank" rel="noopener">Abrir site ↗</a>
       <button class="btn small" data-act="copy-link" data-path="${esc(c.path)}" data-dir="1">Copiar link</button>
+      <button class="btn small" data-act="test-course" data-path="${esc(c.path)}" ${S.testing.has(c.path) ? "disabled" : ""} title="Abre cada endereço do curso e diz se está no ar">Testar links</button>
       <button class="btn small" data-act="toggle-lessons" data-path="${esc(c.path)}" aria-expanded="${open}">${open ? "Ocultar aulas" : "Links das aulas"}</button>
       <button class="btn small" data-act="goto-files" data-path="${esc(c.path)}">Arquivos</button>
       <button class="btn small" data-act="move" data-path="${esc(c.path)}">Renomear/mover</button>
@@ -405,7 +498,7 @@ function renderMain() {
   const tabs = `<div class="tabs" role="tablist"><button class="tab" role="tab" data-act="tab" data-view="cursos" aria-selected="${S.view === "cursos"}">Cursos (${S.courses.length})</button><button class="tab" role="tab" data-act="tab" data-view="arquivos" aria-selected="${S.view === "arquivos"}">Todos os arquivos</button></div>`;
   let body;
   if (S.view === "cursos") {
-    body = `<div class="section-head"><div><h2>Cursos publicados</h2><p>Cada curso é uma pasta com um <code>index.html</code> e as páginas das aulas (<code>.html</code>), como o ClassAtelier publica. Os nomes das aulas podem ser livres.</p></div><div class="actions"><button class="btn" data-act="index" data-path="">Gerar índice do site…</button><a class="btn" href="${esc(pagesBase())}" target="_blank" rel="noopener">Abrir o site ↗</a></div></div>` +
+    body = `<div class="section-head"><div><h2>Cursos publicados</h2><p>Cada curso é uma pasta com um <code>index.html</code> e as páginas das aulas (<code>.html</code>), como o ClassAtelier publica. Os nomes das aulas podem ser livres.</p></div><div class="actions">${buildChip()}<button class="btn" data-act="test-all" title="Testa os links de todos os cursos">Testar todos os links</button><button class="btn" data-act="thumbs" aria-pressed="${S.thumbs}" title="Mostrar ou esconder as miniaturas dos cursos">Miniaturas: ${S.thumbs ? "sim" : "não"}</button><button class="btn" data-act="index" data-path="">Gerar índice do site…</button><a class="btn" href="${esc(pagesBase())}" target="_blank" rel="noopener">Abrir o site ↗</a></div></div>` +
       (S.courses.length ? `<div class="grid">${S.courses.map(courseCard).join("")}</div>` : `<div class="empty"><h3>Nenhum curso encontrado neste repositório</h3><p>Publique pelo ClassAtelier em Exportar → Curso e GitHub…, ou use a aba de arquivos para ver tudo o que há aqui.</p></div>`);
   } else {
     body = `<div class="section-head"><div><h2>Todos os arquivos</h2><p>${S.files.size} arquivos em ${S.dirs.size} pastas. <b>Clique</b> em um item para ver detalhes e ações. <b>Marque as caixas</b> para excluir vários de uma vez.</p></div></div>${bulkBar()}<div class="explorer"><div class="tree" role="tree" aria-label="Arquivos do repositório">${treeRows("", 0) || '<div class="empty">Repositório vazio.</div>'}</div>${detailPanel()}</div>`;
@@ -414,6 +507,7 @@ function renderMain() {
   $("#main").innerHTML = warn + readOnly + tabs + body;
   if ($(".tree")) $(".tree").scrollTop = keep;
   if (S.view === "arquivos" && S.selected && S.files.has(S.selected)) showPreview(S.selected);
+  fitThumbs();
 }
 function render() { renderTop(); renderMain(); }
 
@@ -646,6 +740,9 @@ document.addEventListener("click", async (ev) => {
   }
   if (act === "goto-files") { S.view = "arquivos"; S.selected = path; let d = path; while (d) { S.open.add(d); d = dirname(d); } renderMain(); return; }
   if (act === "fix-index") { actFixIndex(path); return; }
+  if (act === "test-course") { testCourse(path); return; }
+  if (act === "test-all") { testAll(); return; }
+  if (act === "thumbs") { S.thumbs = !S.thumbs; try { localStorage.setItem("acervo.thumbs", S.thumbs ? "1" : "0"); } catch (e) {} renderMain(); return; }
   if (act === "toggle-lessons") { if (S.openLessons.has(path)) S.openLessons.delete(path); else S.openLessons.add(path); renderMain(); return; }
   if (act === "copy-link") { copy(siteUrl(path, el.dataset.dir === "1" || isDirPath(path)), "Link copiado."); return; }
   if (act === "copy-all-links") { copy(allLinksText(path), "Links de todas as aulas copiados."); return; }
@@ -662,6 +759,8 @@ document.addEventListener("click", async (ev) => {
     if (saved) { S.owner = saved.owner || ""; S.repo = saved.repo || ""; S.branch = saved.branch || ""; }
     S.token = sessionStorage.getItem("acervo.token") || localStorage.getItem("acervo.token") || "";
   } catch (e) { /* sem armazenamento */ }
+  try { if (localStorage.getItem("acervo.thumbs") === "0") S.thumbs = false; } catch (e) { /* sem armazenamento */ }
+  window.addEventListener("resize", fitThumbs);
   render();
   // Service worker: exigido por alguns navegadores para oferecer a instalação; só guarda a "casca" do app.
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {

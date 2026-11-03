@@ -2,6 +2,17 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.3.0 · 03/11/2026 · Ver o que está publicado
+
+**Acrescentado**
+- **Miniatura** de cada curso no cartão: uma prévia reduzida da página real do curso no GitHub Pages (clicar abre o site). O botão **Miniaturas: sim/não** liga e desliga; a escolha fica neste navegador.
+- Chip **Alterado há …** em cada curso: data do último commit que mexeu na pasta (o texto do commit aparece ao pousar o mouse).
+- Chip de situação do site no topo da lista: **Site em dia**, **Publicando…**, **Site um pouco atrás do repositório** ou **Última publicação falhou**, lido do último build do GitHub Pages.
+- **Testar links** em cada curso e **Testar todos os links** no topo: abre a página do curso e cada aula e marca **No ar**, **Não encontrada** (404), **Sem resposta** ou **Erro NNN**, com o resumo «2 de 3 links no ar». Ao pousar o mouse no «No ar» aparece a data da versão publicada.
+
+**Observação**
+- O teste só lê (pedido `HEAD`); não altera nada. Em site privado ou sem conexão o resultado é «Sem resposta».
+
 ## 1.2.1 · 03/11/2026 · Manual Class dentro do app
 
 **Acrescentado**
