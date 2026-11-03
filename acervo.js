@@ -2,7 +2,7 @@
 // (os que o ClassAtelier envia em "Curso e GitHub…"). Página estática: fala direto com a API do
 // GitHub a partir do navegador; o token fica só na sessão (ou neste navegador, se você pedir).
 const APP_NAME = "ClassAcervo";
-const APP_VERSION = "1.2.0"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
+const APP_VERSION = "1.2.1"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
 const API = "https://api.github.com";
 const MARKER = "gerado-pelo-classacervo";
 
@@ -312,7 +312,7 @@ function renderTop() {
     right = `<div class="conn-info"><code>${esc(S.conn.owner)}/${esc(S.conn.repo)}@${esc(S.conn.branch)}</code>${pages}${S.loadedAt ? `<span title="Hora da última leitura do repositório">lido às ${S.loadedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>` : ""}</div>
       <button class="btn small" data-act="reload">Recarregar</button><button class="btn small ghost" data-act="logout">Sair</button>`;
   }
-  $("#top").innerHTML = `<a class="brand" href="./" aria-label="${APP_NAME}">${mark}<span><span class="wordmark"><b>Class</b><i>Acervo</i></span><span class="tagline">cursos publicados no GitHub Pages · v${APP_VERSION}</span></span></a><span class="top-spacer"></span>${isStandalone() ? "" : `<button class="btn" data-act="install" title="Instalar o ClassAcervo como aplicativo neste aparelho">Instalar app</button>`}<a class="btn" href="https://rgbittencourt.github.io/classatelier/" target="_blank" rel="noopener" title="Abrir o ClassAtelier (editor das aulas) em outra aba">ClassAtelier ↗</a>${right}`;
+  $("#top").innerHTML = `<a class="brand" href="./" aria-label="${APP_NAME}">${mark}<span><span class="wordmark"><b>Class</b><i>Acervo</i></span><span class="tagline">cursos publicados no GitHub Pages · v${APP_VERSION}</span></span></a><span class="top-spacer"></span>${isStandalone() ? "" : `<button class="btn" data-act="install" title="Instalar o ClassAcervo como aplicativo neste aparelho">Instalar app</button>`}<a class="btn" href="manual/index.html#acervo" target="_blank" rel="noopener" title="Manual Class: guia de uso do ClassAcervo (abre em outra aba, no capítulo do ClassAcervo)">Manual ↗</a><a class="btn" href="https://rgbittencourt.github.io/classatelier/" target="_blank" rel="noopener" title="Abrir o ClassAtelier (editor das aulas) em outra aba">ClassAtelier ↗</a>${right}`;
 }
 
 function renderConnect() {

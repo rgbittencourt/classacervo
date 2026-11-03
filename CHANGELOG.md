@@ -2,6 +2,14 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.2.1 · 03/11/2026 · Manual Class dentro do app
+
+**Acrescentado**
+- Botão **Manual ↗** no cabeçalho: abre o Manual Class numa aba nova, direto no capítulo do ClassAcervo. O manual fica na pasta `manual/` do repositório e o app instalado também o guarda, então ele abre sem internet.
+
+**Mudou**
+- O título da aba do navegador segue o padrão dos três apps: «ClassAcervo - Cursos publicados».
+
 ## 1.2.0 · 29/10/2026 · instalável e sem dados do autor na tela
 
 **Acrescentado**
