@@ -2,7 +2,7 @@
 // (os que o ClassAtelier envia em "Curso e GitHub…"). Página estática: fala direto com a API do
 // GitHub a partir do navegador; o token fica só na sessão (ou neste navegador, se você pedir).
 const APP_NAME = "ClassAcervo";
-const APP_VERSION = "1.3.0"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
+const APP_VERSION = "1.4.0"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
 const API = "https://api.github.com";
 const MARKER = "gerado-pelo-classacervo";
 
@@ -498,7 +498,7 @@ function renderMain() {
   const tabs = `<div class="tabs" role="tablist"><button class="tab" role="tab" data-act="tab" data-view="cursos" aria-selected="${S.view === "cursos"}">Cursos (${S.courses.length})</button><button class="tab" role="tab" data-act="tab" data-view="arquivos" aria-selected="${S.view === "arquivos"}">Todos os arquivos</button></div>`;
   let body;
   if (S.view === "cursos") {
-    body = `<div class="section-head"><div><h2>Cursos publicados</h2><p>Cada curso é uma pasta com um <code>index.html</code> e as páginas das aulas (<code>.html</code>), como o ClassAtelier publica. Os nomes das aulas podem ser livres.</p></div><div class="actions">${buildChip()}<button class="btn" data-act="test-all" title="Testa os links de todos os cursos">Testar todos os links</button><button class="btn" data-act="thumbs" aria-pressed="${S.thumbs}" title="Mostrar ou esconder as miniaturas dos cursos">Miniaturas: ${S.thumbs ? "sim" : "não"}</button><button class="btn" data-act="index" data-path="">Gerar índice do site…</button><a class="btn" href="${esc(pagesBase())}" target="_blank" rel="noopener">Abrir o site ↗</a></div></div>` +
+    body = `<div class="section-head"><div><h2>Cursos publicados</h2><p>Cada curso é uma pasta com um <code>index.html</code> e as páginas das aulas (<code>.html</code>), como o ClassAtelier publica. Os nomes das aulas podem ser livres.</p></div><div class="actions">${buildChip()}<button class="btn" data-act="report" title="Links das aulas de vários cursos e fóruns para o Moodle">Relatório para o Moodle…</button><button class="btn" data-act="test-all" title="Testa os links de todos os cursos">Testar todos os links</button><button class="btn" data-act="thumbs" aria-pressed="${S.thumbs}" title="Mostrar ou esconder as miniaturas dos cursos">Miniaturas: ${S.thumbs ? "sim" : "não"}</button><button class="btn" data-act="index" data-path="">Gerar índice do site…</button><a class="btn" href="${esc(pagesBase())}" target="_blank" rel="noopener">Abrir o site ↗</a></div></div>` +
       (S.courses.length ? `<div class="grid">${S.courses.map(courseCard).join("")}</div>` : `<div class="empty"><h3>Nenhum curso encontrado neste repositório</h3><p>Publique pelo ClassAtelier em Exportar → Curso e GitHub…, ou use a aba de arquivos para ver tudo o que há aqui.</p></div>`);
   } else {
     body = `<div class="section-head"><div><h2>Todos os arquivos</h2><p>${S.files.size} arquivos em ${S.dirs.size} pastas. <b>Clique</b> em um item para ver detalhes e ações. <b>Marque as caixas</b> para excluir vários de uma vez.</p></div></div>${bulkBar()}<div class="explorer"><div class="tree" role="tree" aria-label="Arquivos do repositório">${treeRows("", 0) || '<div class="empty">Repositório vazio.</div>'}</div>${detailPanel()}</div>`;
@@ -531,9 +531,9 @@ async function showPreview(path) {
 }
 
 /* ───────────── diálogos ───────────── */
-function dialog({ title, body, actions }) {
+function dialog({ title, body, actions, wide }) {
   const root = $("#dialog-root");
-  root.innerHTML = `<div class="scrim" data-act="scrim"><section class="dialog" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header><h2>${esc(title)}</h2></header><div class="body">${body}</div><footer>${(actions || []).map((a, i) => `<button class="btn ${a.kind || ""}" data-dlg="${i}" ${a.disabled ? "disabled" : ""}>${esc(a.label)}</button>`).join("")}</footer></section></div>`;
+  root.innerHTML = `<div class="scrim" data-act="scrim"><section class="dialog${wide ? " wide" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header><h2>${esc(title)}</h2></header><div class="body">${body}</div><footer>${(actions || []).map((a, i) => `<button class="btn ${a.kind || ""}" data-dlg="${i}" ${a.disabled ? "disabled" : ""}>${esc(a.label)}</button>`).join("")}</footer></section></div>`;
   dialog.actions = actions || [];
   const first = root.querySelector("input,button[data-dlg]"); if (first) first.focus();
 }
@@ -683,6 +683,124 @@ function allLinksText(coursePath) {
   return c.lessons.map((l) => `${lessonLabel(l)}: ${siteUrl(l.file)}`).join("\n");
 }
 
+/* ───────────── relatório para o Moodle ───────────── */
+// A aula publicada guarda o projeto dentro dela (<script id="aula-lesson">), por isso dá para ler daqui os
+// fóruns de cada aula: título, pergunta, prazos e o endereço do fórum que foi colado no bloco.
+const stripHtml = (h) => String(h == null ? "" : h).replace(/<\s*br\s*\/?>/gi, "\n").replace(/<\/(p|div|li|h[1-6]|tr)>/gi, "\n").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/[ \t]+/g, " ").replace(/ ?\n ?/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+const realUrl = (u) => /^https?:\/\/[^\s/$.?#]+\.[^\s]*$/i.test(String(u || "").trim());
+function forumsIn(blocks, section, out) {
+  for (const b of blocks || []) {
+    const p = b.props || {}; const kids = Array.isArray(p.children) ? p.children : [];
+    if (b.type === "forum") {
+      out.push({ section: section || "", title: stripHtml(p.title) || "Fórum de discussão", prompt: stripHtml(p.prompt), dueInitial: stripHtml(p.dueInitial), dueReplies: stripHtml(p.dueReplies),
+        rules: (p.rules || []).map(stripHtml).filter(Boolean), criteria: p.showCriteria ? stripHtml(p.criteria) : "", href: String(p.href || "").trim(), hasLink: realUrl(p.href) });
+    }
+    if (kids.length) { const t = kids.find((k) => k.type === "titulo"); forumsIn(kids, section || (t ? stripHtml((t.props || {}).text) : "") || stripHtml(p.title), out); }
+  }
+  return out;
+}
+const lessonCache = new Map(); // sha do arquivo -> { forums } | null (não é uma aula do ClassAtelier)
+async function readLesson(file) {
+  const meta = S.files.get(file); if (!meta) return null;
+  if (lessonCache.has(meta.sha)) return lessonCache.get(meta.sha);
+  let out = null;
+  try {
+    const html = b64text((await api(`${repoPath()}/git/blobs/${meta.sha}`)).content);
+    const m = /<script type="application\/json" id="aula-lesson">\s*([\s\S]*?)\s*<\/script>/.exec(html);
+    if (m) { const data = JSON.parse(m[1]); out = { forums: forumsIn(data.blocks, "", []) }; }
+  } catch (e) { out = null; }
+  lessonCache.set(meta.sha, out);
+  return out;
+}
+async function buildReport(courses, onProgress) {
+  const jobs = courses.flatMap((c) => c.lessons.map((l) => ({ c, l })));
+  let done = 0, next = 0;
+  const results = new Map();
+  const worker = async () => {
+    while (next < jobs.length) {
+      const { l } = jobs[next++];
+      results.set(l.file, await readLesson(l.file));
+      onProgress && onProgress(++done, jobs.length);
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  return courses.map((c) => ({ course: c, lessons: c.lessons.map((l) => ({ lesson: l, url: siteUrl(l.file), label: lessonLabel(l), read: results.get(l.file) })) }));
+}
+const forumDesc = (f) => [f.prompt, f.dueInitial && "Contribuição inicial: " + f.dueInitial, f.dueReplies && "Respostas aos colegas: " + f.dueReplies, f.rules.length && "Como participar:\n" + f.rules.map((r) => "- " + r).join("\n"), f.criteria && "Como será avaliado:\n" + f.criteria].filter(Boolean).join("\n\n");
+function reportParts(report) {
+  const forums = report.flatMap((r) => r.lessons.flatMap((x) => ((x.read && x.read.forums) || []).map((f) => ({ ...f, course: r.course, lessonLabel: x.label, lessonUrl: x.url }))));
+  const links = report.map((r) => [`CURSO: ${r.course.title} (${r.course.path})`, `  Página do curso: ${siteUrl(r.course.path, true)}`, ...r.lessons.map((x) => `  ${x.label}: ${x.url}`)].join("\n")).join("\n\n");
+  const created = forums.filter((f) => f.hasLink), toCreate = forums.filter((f) => !f.hasLink);
+  const forumLinks = created.map((f) => `${f.title} (${f.course.title} · ${f.lessonLabel}): ${f.href}`).join("\n");
+  const forumTodo = toCreate.map((f, n) => `── ${n + 1}. ${f.title}\nCurso: ${f.course.title} · ${f.lessonLabel}\n\nDescrição:\n${forumDesc(f)}`).join("\n\n");
+  const unread = report.reduce((n, r) => n + r.lessons.filter((x) => !x.read).length, 0);
+  return { forums, created, toCreate, links, forumLinks, forumTodo, unread };
+}
+function reportText(report) {
+  const P = reportParts(report); const when = fmtDate(new Date());
+  const L = [`RELATÓRIO PARA O MOODLE — ${S.conn.owner}/${S.conn.repo}`, `Gerado em ${when} pelo ${APP_NAME}.`, "", "1. LINKS DAS AULAS (Recurso URL do Moodle)", "", P.links, "", `2. FÓRUNS JÁ CRIADOS (${P.created.length})`, "", P.forumLinks || "Nenhum fórum com endereço nas aulas lidas.", "", `3. FÓRUNS PARA CRIAR NO MOODLE (${P.toCreate.length})`, ""];
+  if (P.toCreate.length) L.push("No curso do Moodle: Ativar edição → Adicionar uma atividade ou recurso → Fórum. Copie o nome e a descrição, ajuste as datas, salve e cole o endereço do fórum no bloco da aula (ClassAtelier); publique a aula de novo.", "", P.forumTodo);
+  else L.push("Nenhum: todos os fóruns das aulas lidas já têm endereço.");
+  if (P.unread) L.push("", `Observação: ${P.unread} página(s) não eram aulas do ClassAtelier (ou não foi possível lê-las), por isso não têm lista de fóruns.`);
+  return L.join("\n") + "\n";
+}
+function reportCsv(report) {
+  const q = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+  const rows = [["Curso", "Pasta", "Tipo", "Nome", "Aula", "Endereço", "Situação"]];
+  for (const r of report) {
+    rows.push([r.course.title, r.course.path, "Curso", r.course.title, "", siteUrl(r.course.path, true), ""]);
+    for (const x of r.lessons) {
+      rows.push([r.course.title, r.course.path, "Aula", x.lesson.title || x.label, x.label, x.url, ""]);
+      for (const f of (x.read && x.read.forums) || []) rows.push([r.course.title, r.course.path, "Fórum", f.title, x.label, f.hasLink ? f.href : "", f.hasLink ? "Já criado" : "A criar no Moodle"]);
+    }
+  }
+  return "\ufeff" + rows.map((r) => r.map(q).join(";")).join("\r\n") + "\r\n";
+}
+function saveText(name, text, type) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: type || "text/plain;charset=utf-8" })); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function actReport() {
+  if (!S.courses.length) { dlgError(new Error("Nenhum curso encontrado neste repositório.")); return; }
+  dialog({
+    title: "Relatório para o Moodle",
+    body: `<p>Reúne, de vários cursos de uma vez, os <b>links das aulas</b> (para criar os Recursos URL) e os <b>fóruns</b> que as aulas trazem: os que já têm endereço e os que ainda precisam ser criados no Moodle. Só lê; não altera nada.</p>
+      <p style="margin-bottom:6px"><b>Cursos no relatório</b></p>
+      <div class="list-pick">${S.courses.map((c, i) => `<label><input type="checkbox" data-i="${i}" checked><span>${esc(c.title)}<br><code>${esc(c.path)}</code> · ${c.lessons.length} aula${c.lessons.length === 1 ? "" : "s"}</span></label>`).join("")}</div>
+      <p class="hint">Para achar os fóruns, o ClassAcervo lê o arquivo de cada aula do repositório. Com muitas aulas, leva alguns segundos.</p>`,
+    actions: [{ label: "Cancelar", onClick: closeDialog }, { label: "Gerar relatório", kind: "primary", onClick: async () => {
+      const chosen = S.courses.filter((_, i) => $(`input[data-i="${i}"]`).checked);
+      if (!chosen.length) { toast("Marque ao menos um curso."); return; }
+      dlgBusy("Lendo as aulas…");
+      try {
+        const report = await buildReport(chosen, (d, t) => { const el = $("#dialog-root .body p"); if (el) el.innerHTML = `<span class="spinner"></span>Lendo as aulas… ${d} de ${t}`; });
+        showReport(report);
+      } catch (e) { dlgError(e); }
+    } }]
+  });
+}
+function showReport(report) {
+  const P = reportParts(report);
+  const lessons = report.reduce((n, r) => n + r.lessons.length, 0);
+  const forumRows = P.forums.map((f) => `<tr><td>${esc(f.title)}</td><td>${esc(f.course.title)}<br><span class="hint">${esc(f.lessonLabel)}</span></td><td>${f.hasLink ? `<span class="chip ok">Já criado</span><br><a href="${esc(f.href)}" target="_blank" rel="noopener">abrir ↗</a>` : '<span class="chip warn">A criar no Moodle</span>'}</td></tr>`).join("");
+  dialog({
+    title: "Relatório para o Moodle", wide: true,
+    body: `<div class="meta" style="margin-bottom:12px"><span class="chip">${report.length} curso${report.length === 1 ? "" : "s"}</span><span class="chip">${lessons} aula${lessons === 1 ? "" : "s"}</span><span class="chip ${P.toCreate.length ? "warn" : "ok"}">${P.forums.length} ${P.forums.length === 1 ? "fórum" : "fóruns"} · ${P.toCreate.length} a criar</span>${P.unread ? `<span class="chip" title="Páginas que não são aulas do ClassAtelier ou que não foi possível ler.">${P.unread} sem leitura</span>` : ""}</div>
+      <p style="margin-bottom:4px"><b>Links das aulas</b> <span class="hint">(um Recurso URL no Moodle para cada um)</span></p>
+      <textarea class="report-box" readonly rows="8" data-rp="links">${esc(P.links)}</textarea>
+      <p style="margin:14px 0 4px"><b>Fóruns</b></p>
+      ${P.forums.length ? `<table class="report-table"><thead><tr><th>Fórum</th><th>Curso · aula</th><th>Situação</th></tr></thead><tbody>${forumRows}</tbody></table>` : '<p class="hint">Nenhuma das aulas lidas tem bloco de fórum.</p>'}
+      ${P.toCreate.length ? `<p style="margin:14px 0 4px"><b>Fóruns para criar no Moodle</b> <span class="hint">(nome e descrição de cada um)</span></p><textarea class="report-box" readonly rows="8" data-rp="todo">${esc(P.forumTodo)}</textarea>` : ""}`,
+    actions: [
+      { label: "Copiar links das aulas", onClick: () => copy(P.links, "Links das aulas copiados.") },
+      ...(P.toCreate.length ? [{ label: "Copiar fóruns a criar", onClick: () => copy(P.forumTodo, "Lista de fóruns copiada.") }] : []),
+      { label: "Baixar .txt", onClick: () => saveText("relatorio-moodle.txt", reportText(report)) },
+      { label: "Baixar .csv", onClick: () => saveText("relatorio-moodle.csv", reportCsv(report), "text/csv;charset=utf-8") },
+      { label: "Fechar", kind: "primary", onClick: closeDialog }
+    ]
+  });
+}
+
 /* ───────────── conexão ───────────── */
 async function connect(form) {
   const fd = new FormData(form);
@@ -742,6 +860,7 @@ document.addEventListener("click", async (ev) => {
   if (act === "fix-index") { actFixIndex(path); return; }
   if (act === "test-course") { testCourse(path); return; }
   if (act === "test-all") { testAll(); return; }
+  if (act === "report") { actReport(); return; }
   if (act === "thumbs") { S.thumbs = !S.thumbs; try { localStorage.setItem("acervo.thumbs", S.thumbs ? "1" : "0"); } catch (e) {} renderMain(); return; }
   if (act === "toggle-lessons") { if (S.openLessons.has(path)) S.openLessons.delete(path); else S.openLessons.add(path); renderMain(); return; }
   if (act === "copy-link") { copy(siteUrl(path, el.dataset.dir === "1" || isDirPath(path)), "Link copiado."); return; }

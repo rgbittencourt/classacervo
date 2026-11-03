@@ -2,6 +2,16 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.4.0 · 03/11/2026 · Relatório para o Moodle
+
+**Acrescentado**
+- Botão **Relatório para o Moodle…** na lista de cursos: escolha um ou vários cursos e o ClassAcervo reúne, de uma vez, os **links de todas as aulas** (para criar os Recursos URL) e os **fóruns** que as aulas trazem.
+- Os fóruns são lidos de dentro das aulas publicadas (o projeto vai embutido no arquivo da aula). Cada um aparece como **Já criado** (com o endereço que foi colado no bloco) ou **A criar no Moodle** (bloco sem endereço, ou com o «https://» de modelo). Para os que faltam, o relatório traz o **nome e a descrição** (pergunta, prazos, regras e critérios) prontos para copiar.
+- Botões para **copiar** os links das aulas e a lista de fóruns a criar, e para **baixar** o relatório em **.txt** ou **.csv** (planilha, com acentos corretos no Excel).
+
+**Observação**
+- Só lê o repositório; não altera nada. Páginas que não são aulas do ClassAtelier aparecem como «sem leitura» (não têm lista de fóruns). Aula publicada antes de o bloco de fórum receber o endereço mostra o fórum como «A criar» até ser publicada de novo.
+
 ## 1.3.0 · 03/11/2026 · Ver o que está publicado
 
 **Acrescentado**
