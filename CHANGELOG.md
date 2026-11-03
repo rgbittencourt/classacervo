@@ -2,6 +2,11 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.4.1 · 03/11/2026 · Manual Class atualizado
+
+**Acrescentado**
+- O **Manual Class** que o app guarda (e que abre sem internet) foi atualizado: descreve as miniaturas, o «Alterado há …», a situação do site, o «Testar links» e o «Relatório para o Moodle», além das novidades do ClassAuthor e do ClassAtelier. A versão do `sw.js` mudou para o app instalado trocar o manual antigo pelo novo.
+
 ## 1.4.0 · 03/11/2026 · Relatório para o Moodle
 
 **Acrescentado**
