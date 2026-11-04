@@ -2,6 +2,10 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.4.17 · 04/11/2026 · Manual Class: ícones e capturas de tela
+
+- O **Manual Class** descreve a nova busca de ícones do ClassAtelier (1.392 ícones, em português e inglês) e teve as capturas de tela refeitas. O ClassAcervo em si não mudou.
+
 ## 1.4.16 · 04/11/2026 · Manual Class: Ficha do ClassAuthor
 
 - O **Manual Class** descreve o botão «Organizar lista» na Ficha da disciplina do ClassAuthor. O ClassAcervo em si não mudou.

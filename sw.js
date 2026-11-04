@@ -1,7 +1,7 @@
 // ClassAcervo — service worker mínimo.
 // Serve o app pela rede (sempre a versão mais nova) e guarda a "casca" para abrir mesmo sem
 // conexão; as chamadas ao GitHub (outro endereço) nunca passam por aqui nem são guardadas.
-const VERSION = "1.4.16";
+const VERSION = "1.4.17";
 const CACHE = "classacervo-" + VERSION;
 const SHELL = ["./", "./index.html", "./acervo.js", "./acervo.css", "./fonts/fonts.css", "./assets/classacervo-mark.svg", "./assets/classacervo.webmanifest", "./assets/icons/icon-192.png", "./assets/icons/icon-512.png", "./manual/index.html"];
 
