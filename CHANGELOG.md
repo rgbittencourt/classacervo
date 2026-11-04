@@ -2,6 +2,10 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.4.14 · 04/11/2026 · Manual Class: referências ABNT
+
+- O **Manual Class** descreve que o título da referência sai sempre em negrito e que o que falta aparece como «[título]», «[ano]» e «Acesso em: [dia mês ano].». O ClassAcervo em si não mudou.
+
 ## 1.4.13 · 04/11/2026 · Manual Class: referências ABNT
 
 - O **Manual Class** descreve as novas correções das referências (entidade como autor, sem editora, «[ano]» e «Acesso em: [dia mês ano]» à vista). O ClassAcervo em si não mudou.
