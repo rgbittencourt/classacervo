@@ -2,6 +2,10 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.4.7 · 04/11/2026 · Manual Class atualizado
+
+- O **Manual Class** descreve o quadro único «Acesso ao ClassAuthor» do ClassAtelier (1.15.1). O ClassAcervo em si não mudou.
+
 ## 1.4.6 · 04/11/2026 · Manual Class atualizado
 
 - O **Manual Class** descreve os interruptores do bloco Vídeo do ClassAtelier (1.15.0). O ClassAcervo em si não mudou.
