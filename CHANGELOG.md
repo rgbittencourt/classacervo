@@ -2,6 +2,10 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.4.12 · 04/11/2026 · Manual Class: referências ABNT
+
+- O **Manual Class** descreve que a correção automática desfaz negrito fora do título e arruma espaços, pontuação e caixa. O ClassAcervo em si não mudou.
+
 ## 1.4.11 · 04/11/2026 · Manual Class: ClassAuthor 1.15.2
 
 - O **Manual Class** passa a citar o ClassAuthor 1.15.2 (referências corrigidas também na Ficha da disciplina e na leitura da semana). O ClassAcervo em si não mudou.
