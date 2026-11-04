@@ -2,6 +2,10 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.4.16 · 04/11/2026 · Manual Class: Ficha do ClassAuthor
+
+- O **Manual Class** descreve o botão «Organizar lista» na Ficha da disciplina do ClassAuthor. O ClassAcervo em si não mudou.
+
 ## 1.4.15 · 04/11/2026 · Manual Class: referências pela NBR 6023:2025
 
 - O **Manual Class** passa a descrever as referências conforme a **ABNT NBR 6023:2025** (endereço sem « < > », obra sem autor sem negrito, lei com a data em negrito, «[ano]» no lugar de «[s. d.]») e que, no ClassAtelier, só o botão «Organizar lista» corrige. O ClassAcervo em si não mudou.
