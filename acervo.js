@@ -2,7 +2,7 @@
 // (os que o ClassAtelier envia em "Curso e GitHub…"). Página estática: fala direto com a API do
 // GitHub a partir do navegador; o token fica só na sessão (ou neste navegador, se você pedir).
 const APP_NAME = "ClassAcervo";
-const APP_VERSION = "1.4.8"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
+const APP_VERSION = "1.4.9"; // Versionamento Semântico; igual ao número em index.html e CHANGELOG.md
 const API = "https://api.github.com";
 const MARKER = "gerado-pelo-classacervo";
 
