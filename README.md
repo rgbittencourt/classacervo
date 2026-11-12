@@ -3,7 +3,7 @@
 Ferramenta gráfica para cuidar dos **cursos publicados no GitHub Pages**: ver, renomear, mover, duplicar e excluir pastas e arquivos, gerar o índice do site e copiar a lista de links para o Moodle. Faz parte do ecossistema **ClassAuthor** (planeja e escreve a disciplina) e **ClassAtelier** (dá o acabamento e publica). Desenvolvido por Prof. Rogério G. Bittencourt, INOVALAB, IFSC (Câmpus Florianópolis–Continente).
 
 - **Endereço:** https://rgbittencourt.github.io/classacervo/
-- **Versão atual:** **1.4.19** (Versionamento Semântico). Histórico em [`CHANGELOG.md`](CHANGELOG.md).
+- **Versão atual:** **1.4.20** (Versionamento Semântico). Histórico em [`CHANGELOG.md`](CHANGELOG.md).
 - Página estática, sem servidor: o navegador fala direto com a API do GitHub.
 
 ## Como usar
