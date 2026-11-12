@@ -2,6 +2,10 @@
 
 Segue o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (MAIOR.MENOR.CORREÇÃO). O número aparece no subtítulo do cabeçalho, no rodapé de créditos e no rodapé dos índices que o app gera; fica na constante `APP_VERSION` de `acervo.js` e no rodapé de `index.html`. Ao mudar a versão, altere os dois lugares e a data abaixo.
 
+## 1.4.22 · 12/11/2026 · Manual Class: pastas, GitHub e os três apps
+
+- O **Manual Class** ganhou o **Anexo B**: onde ficam os arquivos (pasta do projeto, GitHub e navegador), as subpastas do ClassAuthor e do ClassAtelier, a conversa entre os apps, o que o ClassAtelier publica, como o ClassAcervo lê o repositório, um exemplo de ponta a ponta e os cuidados. O ClassAcervo em si não mudou.
+
 ## 1.4.21 · 12/11/2026 · Manual Class: títulos longos na publicação
 
 - O **Manual Class** acompanha o ClassAtelier 1.18.3 (títulos longos de aula quebram em várias linhas). O ClassAcervo em si não mudou.
